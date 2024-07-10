@@ -1,0 +1,48 @@
+{
+  "name": "react-virtual-overflow",
+  "version": "0.0.1",
+  "description": "smart virtual scroll without headache",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "node ./build.js && tsc && browserify ./lib/examples/demo.js -o ./build_examples/demo.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Morglod/react-virtual-overflow.git"
+  },
+  "keywords": [
+    "virtual",
+    "scroll",
+    "infinity",
+    "window",
+    "react",
+    "hooks",
+    "magic",
+    "hack",
+    "impossible",
+    "swap"
+  ],
+  "author": "morglod",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "~17 || ~18"
+  },
+  "bugs": {
+    "url": "https://github.com/Morglod/react-virtual-overflow/issues"
+  },
+  "homepage": "https://github.com/Morglod/react-virtual-overflow#readme",
+  "devDependencies": {
+    "@types/react": "^18.2.24",
+    "@types/react-dom": "^18.2.8",
+    "browserify": "^17.0.0",
+    "esbuild": "^0.19.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@types/bun": "^1.1.3"
+  }
+}
