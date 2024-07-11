@@ -31,98 +31,215 @@ const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = __importStar(require("react"));
 const client_1 = __importDefault(require("react-dom/client"));
 const __1 = require("..");
-const Item = ({ item, index }) => {
+const utils_1 = require("../utils");
+const Item = ({ item }) => {
     return (0, jsx_runtime_1.jsx)("div", { style: { height: '40px' }, children: item });
 };
 function List({ items }) {
     const containerRef = (0, react_1.useRef)(undefined);
-    const rendered = (0, __1.useVirtualOverflow)({
+    const itemHeight = 40;
+    const rendered = (0, __1.useVirtualOverflowV)({
         containerRef,
-        itemHeight: 40,
-        itemKey: (_, ind) => `${ind}`,
-        items,
-        ItemComponent: Item,
+        itemHeight,
+        itemsLength: items.length,
+        overscanItemsCount: 3,
+        calcVisibleRect: utils_1.virtualOverflowUtils.calcVisibleRectOverflowed,
+        renderItem: (itemIndex, offsetTop, item = items[itemIndex]) => ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', top: `${offsetTop}px` }, children: (0, jsx_runtime_1.jsx)(Item, { item: item }) }, item)),
     });
-    return (0, jsx_runtime_1.jsx)("div", { ref: containerRef, style: { overflowY: 'scroll', height: '300px', background: 'lightgreen' }, children: rendered });
+    return (0, jsx_runtime_1.jsx)("div", { style: { overflowY: 'scroll', height: '300px', background: 'lightgreen' }, children: (0, jsx_runtime_1.jsx)("div", { ref: containerRef, style: { position: 'relative', height: `${itemHeight * items.length}px` }, children: rendered }) });
 }
 const items = Array.from({ length: 300 }).map((_, i) => `item ${i}`);
 function App() {
     const [, forceUpd] = react_1.default.useState(0);
     const r = (0, react_1.useRef)(undefined);
-    return ((0, jsx_runtime_1.jsxs)("div", { ref: r, children: [(0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } }), (0, jsx_runtime_1.jsxs)("div", { style: { overflowY: 'scroll', height: '600px', background: 'lightblue' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } }), (0, jsx_runtime_1.jsx)(List, { items: items })] })] }));
+    return ((0, jsx_runtime_1.jsxs)("div", { ref: r, children: [(0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } }), (0, jsx_runtime_1.jsxs)("div", { style: { overflowY: 'scroll', height: '600px', background: 'blue' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } }), (0, jsx_runtime_1.jsx)(List, { items: items })] }), (0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } })] }));
 }
 const rootElement = document.getElementById("demo");
 const root = client_1.default.createRoot(rootElement);
 root.render((0, jsx_runtime_1.jsx)(react_1.default.StrictMode, { children: (0, jsx_runtime_1.jsx)(App, {}) }));
 
-},{"..":2,"react":12,"react-dom/client":6,"react/jsx-runtime":13}],2:[function(require,module,exports){
+},{"..":2,"../utils":3,"react":13,"react-dom/client":7,"react/jsx-runtime":14}],2:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useVirtualOverflow = void 0;
-const jsx_runtime_1 = require("react/jsx-runtime");
+exports.useVirtualOverflowV = exports.virtualOverflowCalcItemsV = exports.virtualOverflowCalcVisibleRect = void 0;
 const react_1 = require("react");
 function debounceAnimationFrame(func) {
-    let frame = 0;
+    let frameRequest = 0;
     return [
-        (...args) => {
-            cancelAnimationFrame(frame);
-            frame = requestAnimationFrame(() => func.apply(undefined, args));
+        () => {
+            cancelAnimationFrame(frameRequest);
+            frameRequest = requestAnimationFrame((frameTime) => func.call(undefined, frameTime));
         },
-        () => cancelAnimationFrame(frame)
+        () => cancelAnimationFrame(frameRequest)
     ];
 }
-function calcContainerViewRect(containerEl) {
-    const containerRect = containerEl.getBoundingClientRect();
-    const elementViewWidth = Math.min(window.innerWidth - containerRect.left, containerRect.width);
-    const elementViewHeight = Math.min(window.innerHeight - containerRect.top, containerRect.height);
+function virtualOverflowCalcVisibleRect(element) {
+    const elementRect = element.getBoundingClientRect();
+    const visibleRect = {
+        top: elementRect.top,
+        left: elementRect.left,
+        bottom: elementRect.bottom,
+        right: elementRect.right
+    };
+    // clip to window
+    visibleRect.top = Math.max(visibleRect.top, 0);
+    visibleRect.left = Math.max(visibleRect.left, 0);
+    visibleRect.bottom = Math.min(visibleRect.bottom, window.innerHeight);
+    visibleRect.right = Math.min(visibleRect.right, window.innerWidth);
+    let currentElement = element.parentElement;
+    while (currentElement) {
+        const rect = currentElement.getBoundingClientRect();
+        // clip to the parent's rectangle
+        visibleRect.top = Math.max(visibleRect.top, rect.top);
+        visibleRect.left = Math.max(visibleRect.left, rect.left);
+        visibleRect.bottom = Math.min(visibleRect.bottom, rect.bottom);
+        visibleRect.right = Math.min(visibleRect.right, rect.right);
+        currentElement = currentElement.parentElement;
+    }
+    const contentOffsetTop = visibleRect.top - elementRect.top;
+    const contentOffsetLeft = visibleRect.left - elementRect.left;
     return {
-        x: containerEl.scrollLeft,
-        y: containerEl.scrollTop,
-        width: elementViewWidth,
-        height: elementViewHeight
+        top: visibleRect.top,
+        left: visibleRect.left,
+        bottom: visibleRect.bottom,
+        right: visibleRect.right,
+        contentOffsetTop,
+        contentOffsetLeft,
+        contentVisibleHeight: visibleRect.bottom - visibleRect.top,
+        contentVisibleWidth: visibleRect.right - visibleRect.left,
     };
 }
-function useVirtualOverflow(params) {
-    const { ItemComponent, containerRef, items, itemHeight, itemKey, overscanItemsCount = 4, customPosition } = params;
+exports.virtualOverflowCalcVisibleRect = virtualOverflowCalcVisibleRect;
+function virtualOverflowCalcItemsV(visibleRect, itemHeight, overscanItemsCount, itemsLength) {
+    let itemStart = Math.floor(visibleRect.contentOffsetTop / itemHeight);
+    let itemLen = Math.ceil(visibleRect.contentVisibleHeight / itemHeight);
+    itemStart = Math.max(0, itemStart - overscanItemsCount);
+    itemLen = Math.max(0, Math.min(itemsLength, itemLen + overscanItemsCount + overscanItemsCount));
+    return [itemStart, itemLen];
+}
+exports.virtualOverflowCalcItemsV = virtualOverflowCalcItemsV;
+function useVirtualOverflowV(params, deps = []) {
+    const { renderItem, containerRef, itemsLength, itemHeight, overscanItemsCount = 3, calcVisibleRect = virtualOverflowCalcVisibleRect } = params;
     const [[itemStart, itemLength], setItemSlice] = (0, react_1.useState)([0, 0]);
     (0, react_1.useLayoutEffect)(() => {
         if (!containerRef.current)
             return () => { };
         const containerEl = containerRef.current;
-        const [updateViewRect, cancelFrame] = debounceAnimationFrame(() => {
-            const viewRect = calcContainerViewRect(containerEl);
-            let itemStart = Math.floor(viewRect.y / itemHeight);
-            let itemLen = Math.ceil(viewRect.height / itemHeight);
-            itemStart = Math.max(0, itemStart - overscanItemsCount);
-            itemLen = Math.min(items.length, itemLen + overscanItemsCount + overscanItemsCount);
-            setItemSlice([itemStart, itemLen]);
+        const [updateViewRect, cancelFrame] = debounceAnimationFrame((frameTime) => {
+            const visibleRect = calcVisibleRect(containerEl, frameTime);
+            const itemSlicePos = virtualOverflowCalcItemsV(visibleRect, itemHeight, overscanItemsCount, itemsLength);
+            setItemSlice(itemSlicePos);
         });
-        document.body.addEventListener('scroll', updateViewRect, { capture: true });
-        document.body.addEventListener('resize', updateViewRect, { capture: true });
-        document.body.addEventListener('orientationchange', updateViewRect, { capture: true });
+        window.addEventListener('scroll', updateViewRect, { capture: true, passive: true });
+        window.addEventListener('resize', updateViewRect, { capture: true, passive: true });
+        window.addEventListener('orientationchange', updateViewRect, { capture: true, passive: true });
         updateViewRect();
         return () => {
             cancelFrame();
-            document.body.removeEventListener('scroll', updateViewRect);
-            document.body.removeEventListener('resize', updateViewRect);
-            document.body.removeEventListener('orientationchange', updateViewRect);
+            window.removeEventListener('scroll', updateViewRect);
+            window.removeEventListener('resize', updateViewRect);
+            window.removeEventListener('orientationchange', updateViewRect);
         };
-    }, [containerRef.current, items.length, itemHeight]);
-    const renderedItems = items.slice(itemStart, itemStart + itemLength);
-    for (let i = itemStart, len = itemStart + itemLength; i < len; ++i) {
-        const item = items[i];
-        if (customPosition) {
-            renderedItems[i - itemStart] = ((0, jsx_runtime_1.jsx)(ItemComponent, { item: item, index: i }));
-        }
-        else {
-            renderedItems[i - itemStart] = ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', top: `${i * itemHeight}px`, willChange: 'top' }, children: (0, jsx_runtime_1.jsx)(ItemComponent, { item: item, index: i }) }, i));
-        }
+    }, [containerRef.current, itemsLength, itemHeight, ...deps]);
+    const outLength = itemStart + itemLength;
+    const renderedItems = Array.from({ length: outLength });
+    for (let i = itemStart; i < outLength; ++i) {
+        renderedItems[i - itemStart] = renderItem(i, i * itemHeight);
     }
-    return ((0, jsx_runtime_1.jsx)("div", { style: { position: 'relative', height: `${items.length * itemHeight}px` }, children: renderedItems }));
+    return renderedItems;
 }
-exports.useVirtualOverflow = useVirtualOverflow;
+exports.useVirtualOverflowV = useVirtualOverflowV;
 
-},{"react":12,"react/jsx-runtime":13}],3:[function(require,module,exports){
+},{"react":13}],3:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.virtualOverflowUtils = void 0;
+var virtualOverflowUtils;
+(function (virtualOverflowUtils) {
+    function findScrollContainerTop(el, predicate) {
+        while (el) {
+            const styles = window.getComputedStyle(el);
+            const hasXoverflow = styles.overflowX === "auto" || styles.overflowX === "scroll" || styles.overflowX === "hidden";
+            const hasYoverflow = styles.overflowY === "auto" || styles.overflowY === "scroll" || styles.overflowY === "hidden";
+            if (hasXoverflow || hasYoverflow) {
+                if (predicate) {
+                    if (predicate(el, hasXoverflow, hasYoverflow, styles)) {
+                        return el;
+                    }
+                }
+                else {
+                    return el;
+                }
+            }
+            el = el.parentElement;
+        }
+        return null;
+    }
+    virtualOverflowUtils.findScrollContainerTop = findScrollContainerTop;
+    function findScrollContainerTopStack(el, predicate) {
+        const out = [];
+        while (el) {
+            const styles = window.getComputedStyle(el);
+            const hasXoverflow = styles.overflowX === "auto" || styles.overflowX === "scroll" || styles.overflowX === "hidden";
+            const hasYoverflow = styles.overflowY === "auto" || styles.overflowY === "scroll" || styles.overflowY === "hidden";
+            if (hasXoverflow || hasYoverflow) {
+                if (predicate) {
+                    if (predicate(el, hasXoverflow, hasYoverflow, styles)) {
+                        out.push(el);
+                    }
+                }
+                else {
+                    out.push(el);
+                }
+            }
+            el = el.parentElement;
+        }
+        return out;
+    }
+    virtualOverflowUtils.findScrollContainerTopStack = findScrollContainerTopStack;
+    function calcVisibleRectWithStack(element, stackContainers) {
+        const elementRect = element.getBoundingClientRect();
+        const visibleRect = {
+            top: elementRect.top,
+            left: elementRect.left,
+            bottom: elementRect.bottom,
+            right: elementRect.right,
+        };
+        // clip to screen
+        visibleRect.top = Math.max(visibleRect.top, 0);
+        visibleRect.left = Math.max(visibleRect.left, 0);
+        visibleRect.bottom = Math.min(visibleRect.bottom, window.innerHeight);
+        visibleRect.right = Math.min(visibleRect.right, window.innerWidth);
+        for (const stackEl of stackContainers) {
+            const rect = stackEl.getBoundingClientRect();
+            // clip to the parent's rectangle
+            visibleRect.top = Math.max(visibleRect.top, rect.top);
+            visibleRect.left = Math.max(visibleRect.left, rect.left);
+            visibleRect.bottom = Math.min(visibleRect.bottom, rect.bottom);
+            visibleRect.right = Math.min(visibleRect.right, rect.right);
+        }
+        const contentOffsetTop = visibleRect.top - elementRect.top;
+        const contentOffsetLeft = visibleRect.left - elementRect.left;
+        return {
+            top: visibleRect.top,
+            left: visibleRect.left,
+            bottom: visibleRect.bottom,
+            right: visibleRect.right,
+            contentOffsetTop,
+            contentOffsetLeft,
+            contentVisibleHeight: visibleRect.bottom - visibleRect.top,
+            contentVisibleWidth: visibleRect.right - visibleRect.left,
+        };
+    }
+    virtualOverflowUtils.calcVisibleRectWithStack = calcVisibleRectWithStack;
+    function calcVisibleRectOverflowed(el) {
+        const overflowStack = findScrollContainerTopStack(el);
+        return calcVisibleRectWithStack(el, overflowStack);
+    }
+    virtualOverflowUtils.calcVisibleRectOverflowed = calcVisibleRectOverflowed;
+})(virtualOverflowUtils || (exports.virtualOverflowUtils = virtualOverflowUtils = {}));
+
+},{}],4:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -308,7 +425,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -30180,7 +30297,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":3,"react":12,"scheduler":16}],5:[function(require,module,exports){
+},{"_process":4,"react":13,"scheduler":17}],6:[function(require,module,exports){
 /**
  * @license React
  * react-dom.production.min.js
@@ -30505,7 +30622,7 @@ exports.hydrateRoot=function(a,b,c){if(!ol(a))throw Error(p(405));var d=null!=c&
 e);return new nl(b)};exports.render=function(a,b,c){if(!pl(b))throw Error(p(200));return sl(null,a,b,!1,c)};exports.unmountComponentAtNode=function(a){if(!pl(a))throw Error(p(40));return a._reactRootContainer?(Sk(function(){sl(null,null,a,!1,function(){a._reactRootContainer=null;a[uf]=null})}),!0):!1};exports.unstable_batchedUpdates=Rk;
 exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!pl(c))throw Error(p(200));if(null==a||void 0===a._reactInternals)throw Error(p(38));return sl(a,b,c,!1,d)};exports.version="18.2.0-next-9e3b772b8-20220608";
 
-},{"react":12,"scheduler":16}],6:[function(require,module,exports){
+},{"react":13,"scheduler":17}],7:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -30534,7 +30651,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":3,"react-dom":7}],7:[function(require,module,exports){
+},{"_process":4,"react-dom":8}],8:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -30576,7 +30693,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":4,"./cjs/react-dom.production.min.js":5,"_process":3}],8:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":5,"./cjs/react-dom.production.min.js":6,"_process":4}],9:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -31894,7 +32011,7 @@ exports.jsxs = jsxs;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":3,"react":12}],9:[function(require,module,exports){
+},{"_process":4,"react":13}],10:[function(require,module,exports){
 /**
  * @license React
  * react-jsx-runtime.production.min.js
@@ -31907,7 +32024,7 @@ exports.jsxs = jsxs;
 'use strict';var f=require("react"),k=Symbol.for("react.element"),l=Symbol.for("react.fragment"),m=Object.prototype.hasOwnProperty,n=f.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner,p={key:!0,ref:!0,__self:!0,__source:!0};
 function q(c,a,g){var b,d={},e=null,h=null;void 0!==g&&(e=""+g);void 0!==a.key&&(e=""+a.key);void 0!==a.ref&&(h=a.ref);for(b in a)m.call(a,b)&&!p.hasOwnProperty(b)&&(d[b]=a[b]);if(c&&c.defaultProps)for(b in a=c.defaultProps,a)void 0===d[b]&&(d[b]=a[b]);return{$$typeof:k,type:c,key:e,ref:h,props:d,_owner:n.current}}exports.Fragment=l;exports.jsx=q;exports.jsxs=q;
 
-},{"react":12}],10:[function(require,module,exports){
+},{"react":13}],11:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -34650,7 +34767,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":3}],11:[function(require,module,exports){
+},{"_process":4}],12:[function(require,module,exports){
 /**
  * @license React
  * react.production.min.js
@@ -34678,7 +34795,7 @@ exports.useCallback=function(a,b){return U.current.useCallback(a,b)};exports.use
 exports.useInsertionEffect=function(a,b){return U.current.useInsertionEffect(a,b)};exports.useLayoutEffect=function(a,b){return U.current.useLayoutEffect(a,b)};exports.useMemo=function(a,b){return U.current.useMemo(a,b)};exports.useReducer=function(a,b,e){return U.current.useReducer(a,b,e)};exports.useRef=function(a){return U.current.useRef(a)};exports.useState=function(a){return U.current.useState(a)};exports.useSyncExternalStore=function(a,b,e){return U.current.useSyncExternalStore(a,b,e)};
 exports.useTransition=function(){return U.current.useTransition()};exports.version="18.2.0";
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34689,7 +34806,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react.development.js":10,"./cjs/react.production.min.js":11,"_process":3}],13:[function(require,module,exports){
+},{"./cjs/react.development.js":11,"./cjs/react.production.min.js":12,"_process":4}],14:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34700,7 +34817,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-jsx-runtime.development.js":8,"./cjs/react-jsx-runtime.production.min.js":9,"_process":3}],14:[function(require,module,exports){
+},{"./cjs/react-jsx-runtime.development.js":9,"./cjs/react-jsx-runtime.production.min.js":10,"_process":4}],15:[function(require,module,exports){
 (function (process,setImmediate){(function (){
 /**
  * @license React
@@ -35338,7 +35455,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'),require("timers").setImmediate)
-},{"_process":3,"timers":17}],15:[function(require,module,exports){
+},{"_process":4,"timers":18}],16:[function(require,module,exports){
 (function (setImmediate){(function (){
 /**
  * @license React
@@ -35361,7 +35478,7 @@ exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"
 exports.unstable_shouldYield=M;exports.unstable_wrapCallback=function(a){var b=y;return function(){var c=y;y=b;try{return a.apply(this,arguments)}finally{y=c}}};
 
 }).call(this)}).call(this,require("timers").setImmediate)
-},{"timers":17}],16:[function(require,module,exports){
+},{"timers":18}],17:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -35372,7 +35489,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":14,"./cjs/scheduler.production.min.js":15,"_process":3}],17:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":15,"./cjs/scheduler.production.min.js":16,"_process":4}],18:[function(require,module,exports){
 (function (setImmediate,clearImmediate){(function (){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -35451,4 +35568,4 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this)}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":3,"timers":17}]},{},[1]);
+},{"process/browser.js":4,"timers":18}]},{},[1]);

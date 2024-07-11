@@ -1,24 +1,34 @@
 import React, { useRef } from "react";
 import ReactDOM from "react-dom/client";
-import { UseVirtualOverflowItem, useVirtualOverflow } from "..";
+import { useVirtualOverflowV } from "..";
+import { virtualOverflowUtils } from "../utils";
 
-const Item: UseVirtualOverflowItem<any> = ({ item, index }) => {
+const Item = ({ item }: any) => {
     return <div style={{ height: '40px' }}>{item}</div>;
 };
 
 function List({ items }: any) {
     const containerRef = useRef<HTMLDivElement>(undefined!);
 
-    const rendered = useVirtualOverflow({
+    const itemHeight = 40;
+
+    const rendered = useVirtualOverflowV({
         containerRef,
-        itemHeight: 40,
-        itemKey: (_, ind) => `${ind}`,
-        items,
-        ItemComponent: Item,
+        itemHeight,
+        itemsLength: items.length,
+        overscanItemsCount: 3,
+        calcVisibleRect: virtualOverflowUtils.calcVisibleRectOverflowed,
+        renderItem: (itemIndex, offsetTop, item = items[itemIndex]) => (
+            <div style={{ position: 'absolute', top: `${offsetTop}px` }} key={item}>
+                <Item item={item} />
+            </div>
+        ),
     });
 
-    return <div ref={containerRef} style={{ overflowY: 'scroll', height: '300px', background: 'lightgreen' }}>
-        {rendered}
+    return <div style={{ overflowY: 'scroll', height: '300px', background: 'lightgreen' }}>
+        <div ref={containerRef} style={{ position: 'relative', height: `${itemHeight * items.length}px` }}>
+            {rendered}
+        </div>
     </div>
 }
 
@@ -32,10 +42,11 @@ function App() {
     return (
         <div ref={r}>
             <div style={{ height: '700px' }}></div>
-            <div style={{ overflowY: 'scroll', height: '600px', background: 'lightblue' }}>
+            <div style={{ overflowY: 'scroll', height: '600px', background: 'blue' }}>
                 <div style={{ height: '700px' }}></div>
                 <List items={items} />
             </div>
+            <div style={{ height: '700px' }}></div>
         </div>
     );
 }

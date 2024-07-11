@@ -1,97 +1,128 @@
-import { FC, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
-function debounceAnimationFrame<F extends (...args: any) => any>(func: F) {
-    let frame = 0;
+function debounceAnimationFrame(func: (frameTime: number) => void) {
+    let frameRequest = 0;
 
     return [
-        (...args: Parameters<F>) => {
-            cancelAnimationFrame(frame);
-            frame = requestAnimationFrame(() => func.apply(undefined, args));
+        () => {
+            cancelAnimationFrame(frameRequest);
+            frameRequest = requestAnimationFrame((frameTime) => func.call(undefined, frameTime));
         },
-        () => cancelAnimationFrame(frame)
+        () => cancelAnimationFrame(frameRequest)
     ] as const;
 }
 
-export type UseVirtualOverflowItem<ItemT> = FC<{
-    item: ItemT,
-    index: number,
-}>;
-
-export type UseVirtualOverflowParams<ItemT> = {
-    containerRef: React.MutableRefObject<HTMLElement>,
-    items: ItemT[],
-    itemHeight: number,
-    overscanItemsCount?: number,
-    ItemComponent: UseVirtualOverflowItem<ItemT>,
-    itemKey: (item: ItemT, index: number) => string,
-    customPosition?: boolean,
+export type VirtualOverflowVisibleRect = {
+    top: number;
+    left: number;
+    bottom: number;
+    right: number;
+    contentOffsetTop: number;
+    contentOffsetLeft: number;
+    contentVisibleHeight: number;
+    contentVisibleWidth: number;
 };
 
-export function virtualOverflowCalcItems(containerEl: HTMLElement, itemHeight: number, overscanItemsCount: number, itemsLength: number): [number, number] {
-    const containerRect = containerEl.getBoundingClientRect();
+type CalcVisibleRectFn = (element: HTMLElement, frameIndex: number) => VirtualOverflowVisibleRect;
 
-    const elementViewWidth = Math.min(window.innerWidth - containerRect.left, containerRect.width);
-    const elementViewHeight = Math.min(window.innerHeight - containerRect.top, containerRect.height);
+export type UseVirtualOverflowParamsV = {
+    containerRef: React.MutableRefObject<HTMLElement>,
+    itemsLength: number,
+    itemHeight: number,
+    overscanItemsCount?: number,
+    renderItem: (indexIndex: number, contentTopOffset: number) => React.ReactNode,
+    calcVisibleRect?: CalcVisibleRectFn
+};
 
-    const viewX = containerEl.scrollLeft;
-    const viewY = containerEl.scrollTop;
+export function virtualOverflowCalcVisibleRect(element: HTMLElement) {
+    const elementRect = element.getBoundingClientRect();
 
-    let itemStart = Math.floor(viewY / itemHeight);
-    let itemLen = Math.ceil(elementViewHeight / itemHeight);
+    const visibleRect = {
+        top: elementRect.top,
+        left: elementRect.left,
+        bottom: elementRect.bottom,
+        right: elementRect.right
+    };
+
+    // clip to window
+    visibleRect.top = Math.max(visibleRect.top, 0);
+    visibleRect.left = Math.max(visibleRect.left, 0);
+    visibleRect.bottom = Math.min(visibleRect.bottom, window.innerHeight);
+    visibleRect.right = Math.min(visibleRect.right, window.innerWidth);
+
+    let currentElement: HTMLElement | null = element.parentElement;
+    while (currentElement) {
+        const rect = currentElement.getBoundingClientRect();
+
+        // clip to the parent's rectangle
+        visibleRect.top = Math.max(visibleRect.top, rect.top);
+        visibleRect.left = Math.max(visibleRect.left, rect.left);
+        visibleRect.bottom = Math.min(visibleRect.bottom, rect.bottom);
+        visibleRect.right = Math.min(visibleRect.right, rect.right);
+
+        currentElement = currentElement.parentElement;
+    }
+
+    const contentOffsetTop = visibleRect.top - elementRect.top;
+    const contentOffsetLeft = visibleRect.left - elementRect.left;
+
+    return {
+        top: visibleRect.top,
+        left: visibleRect.left,
+        bottom: visibleRect.bottom,
+        right: visibleRect.right,
+        contentOffsetTop,
+        contentOffsetLeft,
+        contentVisibleHeight: visibleRect.bottom - visibleRect.top,
+        contentVisibleWidth: visibleRect.right - visibleRect.left,
+    };
+}
+
+export function virtualOverflowCalcItemsV(visibleRect: VirtualOverflowVisibleRect, itemHeight: number, overscanItemsCount: number, itemsLength: number): [number, number] {
+    let itemStart = Math.floor(visibleRect.contentOffsetTop / itemHeight);
+    let itemLen = Math.ceil(visibleRect.contentVisibleHeight / itemHeight);
 
     itemStart = Math.max(0, itemStart - overscanItemsCount);
-    itemLen = Math.min(itemsLength, itemLen + overscanItemsCount + overscanItemsCount);
+    itemLen = Math.max(0, Math.min(itemsLength, itemLen + overscanItemsCount + overscanItemsCount));
 
     return [itemStart, itemLen];
 }
 
-export function useVirtualOverflow<ItemT>(params: UseVirtualOverflowParams<ItemT>) {
-    const { ItemComponent, containerRef, items, itemHeight, itemKey, overscanItemsCount = 4, customPosition } = params;
+export function useVirtualOverflowV(params: UseVirtualOverflowParamsV, deps: any[] = []) {
+    const { renderItem, containerRef, itemsLength, itemHeight, overscanItemsCount = 3, calcVisibleRect = virtualOverflowCalcVisibleRect } = params;
     const [[itemStart, itemLength], setItemSlice] = useState([0, 0]);
 
     useLayoutEffect(() => {
         if (!containerRef.current) return () => { };
         const containerEl = containerRef.current;
 
-        const [updateViewRect, cancelFrame] = debounceAnimationFrame(() => {
-            const itemSlicePos = virtualOverflowCalcItems(containerEl, itemHeight, overscanItemsCount, items.length);
+        const [updateViewRect, cancelFrame] = debounceAnimationFrame((frameTime) => {
+            const visibleRect = calcVisibleRect(containerEl, frameTime);
+            const itemSlicePos = virtualOverflowCalcItemsV(visibleRect, itemHeight, overscanItemsCount, itemsLength);
             setItemSlice(itemSlicePos);
         });
 
-        document.body.addEventListener('scroll', updateViewRect, { capture: true, passive: true });
-        document.body.addEventListener('resize', updateViewRect, { capture: true, passive: true });
-        document.body.addEventListener('orientationchange', updateViewRect, { capture: true, passive: true });
+        window.addEventListener('scroll', updateViewRect, { capture: true, passive: true });
+        window.addEventListener('resize', updateViewRect, { capture: true, passive: true });
+        window.addEventListener('orientationchange', updateViewRect, { capture: true, passive: true });
 
         updateViewRect();
 
         return () => {
             cancelFrame();
-            document.body.removeEventListener('scroll', updateViewRect);
-            document.body.removeEventListener('resize', updateViewRect);
-            document.body.removeEventListener('orientationchange', updateViewRect);
+            window.removeEventListener('scroll', updateViewRect);
+            window.removeEventListener('resize', updateViewRect);
+            window.removeEventListener('orientationchange', updateViewRect);
         };
-    }, [containerRef.current, items.length, itemHeight]);
+    }, [containerRef.current, itemsLength, itemHeight, ...deps]);
 
-    const renderedItems: any[] = items.slice(itemStart, itemStart + itemLength);
+    const outLength = itemStart + itemLength;
 
-    for (let i = itemStart, len = itemStart + itemLength; i < len; ++i) {
-        const item = items[i]!;
-        if (customPosition) {
-            renderedItems[i - itemStart] = (
-                <ItemComponent item={item} index={i} />
-            );
-        } else {
-            renderedItems[i - itemStart] = (
-                <div key={i} style={{ position: 'absolute', top: `${i * itemHeight}px`, willChange: 'top' }}>
-                    <ItemComponent item={item} index={i} />
-                </div>
-            );
-        }
+    const renderedItems: React.ReactNode[] = Array.from({ length: outLength });
+
+    for (let i = itemStart; i < outLength; ++i) {
+        renderedItems[i - itemStart] = renderItem(i, i * itemHeight);
     }
 
-    return (
-        <div style={{ position: 'relative', height: `${items.length * itemHeight}px` }}>
-            {renderedItems}
-        </div>
-    );
+    return renderedItems;
 }
