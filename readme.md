@@ -93,7 +93,7 @@ This method will find only parents with overflow style set and calculate clippin
 Also if you know all containers with scroll (which you can find with `findScrollContainerTopStack`) you can calculate directly with `calcVisibleRectWithStack`.
 
 ```tsx
-import { virtualOverflowUtils } from "react-virtual-overflow/utils";
+import { virtualOverflowUtils } from "react-virtual-overflow/lib/utils";
 
 // in component
 const [parentsWithOverflow, setParentsWithOverflow] = useState([] as any[]);
@@ -104,17 +104,16 @@ useLayoutEffect(() => {
     setParentsWithOverflow(stack);
 }, []);
 
-const rendered = useVirtualOverflowV(
-    {
-        containerRef,
-        itemsLength,
-        itemHeight,
-        calcVisibleRect: (el: HTMLElement) => {
-            // calculate only by found overflows
-            return virtualOverflowUtils.calcVisibleRectWithStack(el, parentsWithOverflow);
-        },
-        renderItem,
+const rendered = useVirtualOverflowV({
+    containerRef,
+    itemsLength,
+    itemHeight,
+    calcVisibleRect: (el: HTMLElement) => {
+        // calculate only by found overflows
+        return virtualOverflowUtils.calcVisibleRectWithStack(el, parentsWithOverflow);
     },
+    renderItem,
+},
     // add overflow stack to deps
     [parentsWithOverflow]
 );

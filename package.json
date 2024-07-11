@@ -1,6 +1,6 @@
 {
   "name": "react-virtual-overflow",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "virtual scroll without headache",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
