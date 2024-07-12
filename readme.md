@@ -35,11 +35,15 @@ function MyApp() {
         containerRef,
         itemsLength: items.length,
         itemHeight,
-        renderItem: (itemIndex, offsetTop) => (
-            <div style={{ position: "absolute", top: `${offsetTop}px` }} key={items[itemIndex]}>
-                {items[itemIndex]}
-            </div>
-        ),
+        renderItem: (itemIndex, offsetTop) => {
+            const item = items[itemIndex];
+            
+            return (
+                <div style={{ position: "absolute", top: `${offsetTop}px` }} key={item}>
+                    {item}
+                </div>
+            )
+        },
     }, []);
 
     return (

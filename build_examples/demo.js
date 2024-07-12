@@ -114,7 +114,7 @@ function virtualOverflowCalcItemsV(visibleRect, itemHeight, overscanItemsCount, 
     let itemStart = Math.floor(visibleRect.contentOffsetTop / itemHeight);
     let itemLen = Math.ceil(visibleRect.contentVisibleHeight / itemHeight);
     itemStart = Math.max(0, itemStart - overscanItemsCount);
-    itemLen = Math.max(0, Math.min(itemsLength, itemLen + overscanItemsCount + overscanItemsCount));
+    itemLen = Math.max(0, Math.min(itemsLength - itemStart, itemLen + overscanItemsCount + overscanItemsCount));
     return [itemStart, itemLen];
 }
 exports.virtualOverflowCalcItemsV = virtualOverflowCalcItemsV;
