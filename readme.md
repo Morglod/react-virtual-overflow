@@ -3,10 +3,12 @@
 
 # react-virtual-overflow
 
+Similar to [react-virtualized](https://github.com/bvaughn/react-virtualized), but:
+
 -   No deps
 -   No fighting with containers
--   No magical divs that will wrap your list with position: absolute and height: 0
--   No scroll syncing shit
+-   No magical divs will wrap your list with position: absolute and height: 0
+-   No scroll syncing problems
 -   No AutoWindow over AutoSize with VerticalSpecialList
 -   It just works
 -   <1kb gzipped
