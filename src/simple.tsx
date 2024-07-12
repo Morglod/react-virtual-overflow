@@ -19,6 +19,7 @@ export function SimpleVirtualListV<ItemT>(props: SimpleVirtualListVProps<ItemT>)
         itemHeight: props.itemHeight,
         renderItem: (itemIndex: number, topOffset: number) => {
             const item = props.items[itemIndex];
+            if (!item) return null;
             return (
                 <div style={{ position: 'absolute', top: `${topOffset}px` }} key={props.itemKey(item, itemIndex)}>
                     {props.renderItem(item, itemIndex, topOffset)}

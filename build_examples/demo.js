@@ -170,6 +170,8 @@ function SimpleVirtualListV(props) {
         itemHeight: props.itemHeight,
         renderItem: (itemIndex, topOffset) => {
             const item = props.items[itemIndex];
+            if (!item)
+                return null;
             return ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', top: `${topOffset}px` }, children: props.renderItem(item, itemIndex, topOffset) }, props.itemKey(item, itemIndex)));
         }
     }, [props.items, props.itemHeight]);
