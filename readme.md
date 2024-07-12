@@ -13,7 +13,8 @@
 
 Currently only vertical list supported with fixed item's height, but will add horizontal & grid soon
 
-Components & hooks in this library will automatically find all containers with overflows and render only visible items,  
+Components & hooks in this library will automatically find all containers with overflows and render only visible items.
+
 So you could stack/wrap/move your list in anyway you want, everything will work.
 
 ![](./important.jpg)
