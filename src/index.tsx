@@ -23,7 +23,7 @@ export type VirtualOverflowVisibleRect = {
     contentVisibleWidth: number;
 };
 
-type CalcVisibleRectFn = (element: HTMLElement, frameIndex: number) => VirtualOverflowVisibleRect;
+export type VirtualOverflowCalcVisibleRectFn = (element: HTMLElement, frameIndex: number) => VirtualOverflowVisibleRect;
 
 export type UseVirtualOverflowParamsV = {
     containerRef: React.MutableRefObject<HTMLElement>,
@@ -31,7 +31,7 @@ export type UseVirtualOverflowParamsV = {
     itemHeight: number,
     overscanItemsCount?: number,
     renderItem: (indexIndex: number, contentTopOffset: number) => React.ReactNode,
-    calcVisibleRect?: CalcVisibleRectFn
+    calcVisibleRect?: VirtualOverflowCalcVisibleRectFn
 };
 
 export function virtualOverflowCalcVisibleRect(element: HTMLElement) {

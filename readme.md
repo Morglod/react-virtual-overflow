@@ -13,13 +13,47 @@
 
 Currently only vertical list supported with fixed item's height, but will add horizontal & grid soon
 
+Components & hooks in this library will automatically find all containers with overflows and render only visible items,  
+So you could stack/wrap/move your list in anyway you want, everything will work.
+
 ![](./important.jpg)
 
 ```
 npm i react-virtual-overflow
 ```
 
-[full demo app](src/examples/demo.tsx)
+[demo app code](src/examples/demo.tsx)
+
+## Simple
+
+```tsx
+import { SimpleVirtualListV } from "react-virtual-overflow/lib/simple";
+
+function MyApp() {
+    const items = Array.from({ length: 300 }).map((_, i) => `item ${i}`);
+
+    const itemHeight = 40;
+
+    const renderItem = (item) => (
+        <div style={{ height: '40px' }}>{item}</div>
+    );
+
+    return (
+        <div style={{ overflowY: 'scroll', height: '300px', background: 'lightgreen' }}>
+            <SimpleVirtualListV
+                items={items}
+                itemHeight={itemHeight}
+                itemKey={x => x}
+                renderItem={renderItem}
+            />
+        </div>
+    );
+}
+```
+
+## Advanced
+
+Advanced example with hook
 
 ```tsx
 import { useVirtualOverflowV } from "react-virtual-overflow";
@@ -55,8 +89,6 @@ function MyApp() {
     );
 }
 ```
-
-## Advanced
 
 ### useVirtualOverflowV
 

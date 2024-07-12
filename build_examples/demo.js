@@ -32,10 +32,11 @@ const react_1 = __importStar(require("react"));
 const client_1 = __importDefault(require("react-dom/client"));
 const __1 = require("..");
 const utils_1 = require("../utils");
+const simple_1 = require("../simple");
 const Item = ({ item }) => {
     return (0, jsx_runtime_1.jsx)("div", { style: { height: '40px' }, children: item });
 };
-function List({ items }) {
+function ListWithHook({ items }) {
     const containerRef = (0, react_1.useRef)(undefined);
     const itemHeight = 40;
     const rendered = (0, __1.useVirtualOverflowV)({
@@ -46,19 +47,23 @@ function List({ items }) {
         calcVisibleRect: utils_1.virtualOverflowUtils.calcVisibleRectOverflowed,
         renderItem: (itemIndex, offsetTop, item = items[itemIndex]) => ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', top: `${offsetTop}px` }, children: (0, jsx_runtime_1.jsx)(Item, { item: item }) }, item)),
     });
-    return (0, jsx_runtime_1.jsx)("div", { style: { overflowY: 'scroll', height: '300px', background: 'lightgreen' }, children: (0, jsx_runtime_1.jsx)("div", { ref: containerRef, style: { position: 'relative', height: `${itemHeight * items.length}px` }, children: rendered }) });
+    return ((0, jsx_runtime_1.jsx)("div", { style: { overflowY: 'scroll', height: '300px', background: 'lightgreen' }, children: (0, jsx_runtime_1.jsx)("div", { ref: containerRef, style: { position: 'relative', height: `${itemHeight * items.length}px` }, children: rendered }) }));
+}
+function ListSimple(props) {
+    const items = props.items;
+    return ((0, jsx_runtime_1.jsx)("div", { style: { overflowY: 'scroll', height: '300px', background: 'lightgreen' }, children: (0, jsx_runtime_1.jsx)(simple_1.SimpleVirtualListV, { items: items, itemHeight: 40, itemKey: x => x, renderItem: item => (0, jsx_runtime_1.jsx)("div", { style: { height: '40px' }, children: item }) }) }));
 }
 const items = Array.from({ length: 300 }).map((_, i) => `item ${i}`);
 function App() {
     const [, forceUpd] = react_1.default.useState(0);
     const r = (0, react_1.useRef)(undefined);
-    return ((0, jsx_runtime_1.jsxs)("div", { ref: r, children: [(0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } }), (0, jsx_runtime_1.jsxs)("div", { style: { overflowY: 'scroll', height: '600px', background: 'blue' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } }), (0, jsx_runtime_1.jsx)(List, { items: items })] }), (0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } })] }));
+    return ((0, jsx_runtime_1.jsxs)("div", { ref: r, children: [(0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } }), (0, jsx_runtime_1.jsxs)("div", { style: { overflowY: 'scroll', height: '600px', background: 'blue' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } }), (0, jsx_runtime_1.jsx)(ListSimple, { items: items })] }), (0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } })] }));
 }
 const rootElement = document.getElementById("demo");
 const root = client_1.default.createRoot(rootElement);
 root.render((0, jsx_runtime_1.jsx)(react_1.default.StrictMode, { children: (0, jsx_runtime_1.jsx)(App, {}) }));
 
-},{"..":2,"../utils":3,"react":13,"react-dom/client":7,"react/jsx-runtime":14}],2:[function(require,module,exports){
+},{"..":2,"../simple":3,"../utils":4,"react":14,"react-dom/client":8,"react/jsx-runtime":15}],2:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.useVirtualOverflowV = exports.virtualOverflowCalcItemsV = exports.virtualOverflowCalcVisibleRect = void 0;
@@ -150,7 +155,29 @@ function useVirtualOverflowV(params, deps = []) {
 }
 exports.useVirtualOverflowV = useVirtualOverflowV;
 
-},{"react":13}],3:[function(require,module,exports){
+},{"react":14}],3:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SimpleVirtualListV = void 0;
+const jsx_runtime_1 = require("react/jsx-runtime");
+const react_1 = require("react");
+const _1 = require(".");
+function SimpleVirtualListV(props) {
+    const containerRef = (0, react_1.useRef)(undefined);
+    const rendered = (0, _1.useVirtualOverflowV)({
+        containerRef,
+        itemsLength: props.items.length,
+        itemHeight: props.itemHeight,
+        renderItem: (itemIndex, topOffset) => {
+            const item = props.items[itemIndex];
+            return ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', top: `${topOffset}px` }, children: props.renderItem(item, itemIndex, topOffset) }, props.itemKey(item, itemIndex)));
+        }
+    }, [props.items, props.itemHeight]);
+    return ((0, jsx_runtime_1.jsx)("div", { ref: containerRef, style: { height: `${props.items.length * props.itemHeight}px`, position: 'relative' }, children: rendered }));
+}
+exports.SimpleVirtualListV = SimpleVirtualListV;
+
+},{".":2,"react":14,"react/jsx-runtime":15}],4:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.virtualOverflowUtils = void 0;
@@ -239,7 +266,7 @@ var virtualOverflowUtils;
     virtualOverflowUtils.calcVisibleRectOverflowed = calcVisibleRectOverflowed;
 })(virtualOverflowUtils || (exports.virtualOverflowUtils = virtualOverflowUtils = {}));
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -425,7 +452,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -30297,7 +30324,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":4,"react":13,"scheduler":17}],6:[function(require,module,exports){
+},{"_process":5,"react":14,"scheduler":18}],7:[function(require,module,exports){
 /**
  * @license React
  * react-dom.production.min.js
@@ -30622,7 +30649,7 @@ exports.hydrateRoot=function(a,b,c){if(!ol(a))throw Error(p(405));var d=null!=c&
 e);return new nl(b)};exports.render=function(a,b,c){if(!pl(b))throw Error(p(200));return sl(null,a,b,!1,c)};exports.unmountComponentAtNode=function(a){if(!pl(a))throw Error(p(40));return a._reactRootContainer?(Sk(function(){sl(null,null,a,!1,function(){a._reactRootContainer=null;a[uf]=null})}),!0):!1};exports.unstable_batchedUpdates=Rk;
 exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!pl(c))throw Error(p(200));if(null==a||void 0===a._reactInternals)throw Error(p(38));return sl(a,b,c,!1,d)};exports.version="18.2.0-next-9e3b772b8-20220608";
 
-},{"react":13,"scheduler":17}],7:[function(require,module,exports){
+},{"react":14,"scheduler":18}],8:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -30651,7 +30678,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":4,"react-dom":8}],8:[function(require,module,exports){
+},{"_process":5,"react-dom":9}],9:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -30693,7 +30720,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":5,"./cjs/react-dom.production.min.js":6,"_process":4}],9:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":6,"./cjs/react-dom.production.min.js":7,"_process":5}],10:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -32011,7 +32038,7 @@ exports.jsxs = jsxs;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":4,"react":13}],10:[function(require,module,exports){
+},{"_process":5,"react":14}],11:[function(require,module,exports){
 /**
  * @license React
  * react-jsx-runtime.production.min.js
@@ -32024,7 +32051,7 @@ exports.jsxs = jsxs;
 'use strict';var f=require("react"),k=Symbol.for("react.element"),l=Symbol.for("react.fragment"),m=Object.prototype.hasOwnProperty,n=f.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner,p={key:!0,ref:!0,__self:!0,__source:!0};
 function q(c,a,g){var b,d={},e=null,h=null;void 0!==g&&(e=""+g);void 0!==a.key&&(e=""+a.key);void 0!==a.ref&&(h=a.ref);for(b in a)m.call(a,b)&&!p.hasOwnProperty(b)&&(d[b]=a[b]);if(c&&c.defaultProps)for(b in a=c.defaultProps,a)void 0===d[b]&&(d[b]=a[b]);return{$$typeof:k,type:c,key:e,ref:h,props:d,_owner:n.current}}exports.Fragment=l;exports.jsx=q;exports.jsxs=q;
 
-},{"react":13}],11:[function(require,module,exports){
+},{"react":14}],12:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -34767,7 +34794,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":4}],12:[function(require,module,exports){
+},{"_process":5}],13:[function(require,module,exports){
 /**
  * @license React
  * react.production.min.js
@@ -34795,7 +34822,7 @@ exports.useCallback=function(a,b){return U.current.useCallback(a,b)};exports.use
 exports.useInsertionEffect=function(a,b){return U.current.useInsertionEffect(a,b)};exports.useLayoutEffect=function(a,b){return U.current.useLayoutEffect(a,b)};exports.useMemo=function(a,b){return U.current.useMemo(a,b)};exports.useReducer=function(a,b,e){return U.current.useReducer(a,b,e)};exports.useRef=function(a){return U.current.useRef(a)};exports.useState=function(a){return U.current.useState(a)};exports.useSyncExternalStore=function(a,b,e){return U.current.useSyncExternalStore(a,b,e)};
 exports.useTransition=function(){return U.current.useTransition()};exports.version="18.2.0";
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34806,7 +34833,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react.development.js":11,"./cjs/react.production.min.js":12,"_process":4}],14:[function(require,module,exports){
+},{"./cjs/react.development.js":12,"./cjs/react.production.min.js":13,"_process":5}],15:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34817,7 +34844,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-jsx-runtime.development.js":9,"./cjs/react-jsx-runtime.production.min.js":10,"_process":4}],15:[function(require,module,exports){
+},{"./cjs/react-jsx-runtime.development.js":10,"./cjs/react-jsx-runtime.production.min.js":11,"_process":5}],16:[function(require,module,exports){
 (function (process,setImmediate){(function (){
 /**
  * @license React
@@ -35455,7 +35482,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'),require("timers").setImmediate)
-},{"_process":4,"timers":18}],16:[function(require,module,exports){
+},{"_process":5,"timers":19}],17:[function(require,module,exports){
 (function (setImmediate){(function (){
 /**
  * @license React
@@ -35478,7 +35505,7 @@ exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"
 exports.unstable_shouldYield=M;exports.unstable_wrapCallback=function(a){var b=y;return function(){var c=y;y=b;try{return a.apply(this,arguments)}finally{y=c}}};
 
 }).call(this)}).call(this,require("timers").setImmediate)
-},{"timers":18}],17:[function(require,module,exports){
+},{"timers":19}],18:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -35489,7 +35516,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":15,"./cjs/scheduler.production.min.js":16,"_process":4}],18:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":16,"./cjs/scheduler.production.min.js":17,"_process":5}],19:[function(require,module,exports){
 (function (setImmediate,clearImmediate){(function (){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -35568,4 +35595,4 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this)}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":4,"timers":18}]},{},[1]);
+},{"process/browser.js":5,"timers":19}]},{},[1]);
