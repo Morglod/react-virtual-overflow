@@ -99,8 +99,10 @@ function MyApp() {
 
 <details>
 <summary>
-<b>VirtualListY component</b>
+<b>Vertical list component</b>
 </summary>
+
+<br>
 
 This component is used to render vertical list
 
@@ -144,8 +146,10 @@ function MyApp() {
 
 <details>
 <summary>
-<b>VirtualListX component</b>
+<b>Horizontal list component</b>
 </summary>
+
+<br>
 
 This component is used to render horizontal list
 
@@ -188,8 +192,10 @@ function MyApp() {
 
 <details>
 <summary>
-<b>VirtualGrid component</b>
+<b>Grid component</b>
 </summary>
+
+<br>
 
 This component is used to render grid
 
@@ -197,6 +203,7 @@ This component is used to render grid
 import { VirtualGrid } from "react-virtual-overflow/lib/fixed-grid";
 
 type VirtualGridProps<ItemT> = {
+    // rows
     items: ItemT[][],
     columnsNum: number,
     itemWidth: number,
@@ -233,6 +240,8 @@ function GridExample() {
 <summary>
 <b>Vertical list hook</b>
 </summary>
+
+<br>
 
 `useVirtualOverflowY` hook that computes and renders vertical list
 
@@ -280,6 +289,8 @@ And returns:
 <b>Horizontal list hook</b>
 </summary>
 
+<br>
+
 `useVirtualOverflowX` hook that computes and renders horizontal list
 
 It accepts this params:
@@ -326,7 +337,9 @@ And returns:
 <b>Grid hook</b>
 </summary>
 
-`useVirtualOverflowGrid` hook that computes and renders horizontal list
+<br>
+
+`useVirtualOverflowGrid` hook that computes and renders grid
 
 It accepts this params:
 
@@ -378,6 +391,8 @@ And returns:
 <b>useCalcVirtualOverflow - universal hook for fixed list/grid</b>
 </summary>
 
+<br>
+
 `useCalcVirtualOverflow` hook that computes visible rect at calculates slice of items that should be rendered
 
 It could be used if you want to render items manually, and you need only slice calculated
@@ -421,6 +436,8 @@ And returns:
 <b>Calculate visible on screen rect</b>
 </summary>
 
+<br>
+
 `virtualOverflowCalcVisibleRect` method will calculate on screen visible rect of some element
 
 It accepts this params:
@@ -446,6 +463,8 @@ function virtualOverflowCalcVisibleRect(element: HTMLElement): {
 <summary>
 <b>Slice calculation from visible rect</b>
 </summary>
+
+<br>
 
 `virtualOverflowCalcItems` method will calculate slice of items from visible rect
 
