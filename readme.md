@@ -27,7 +27,8 @@ You also could use some parts of this library for example to calculate only visi
 npm i react-virtual-overflow
 ```
 
-[demo app code](src/examples/demo.tsx)
+[demo app code](src/examples/demo.tsx)  
+[working demo](https://morglod.github.io/react-virtual-overflow/)
 
 ## Simple example
 
