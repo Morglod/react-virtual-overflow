@@ -45,6 +45,8 @@ function MyApp() {
 
     return (
         <div style={{ overflowY: 'scroll', height: '300px', background: 'lightgreen' }}>
+            {/* !this component will not add container with overflow! */}
+            {/* the only overflow here is element above */}
             <VirtualListY
                 items={items}
                 itemHeight={itemHeight}
