@@ -10,14 +10,16 @@ Similar to [react-virtualized](https://github.com/bvaughn/react-virtualized), bu
 -   No magical divs will wrap your list with position: absolute and height: 0
 -   No scroll syncing problems
 -   No AutoWindow over AutoSize with VerticalSpecialList
+-   Full rendering controll
 -   It just works
--   <1kb gzipped
+-   ~0.5kb gzipped
 
-Currently only vertical list supported with fixed item's height, but will add horizontal & grid soon
+Currently only fixed item sizes supported, but will dynamic sizing later.
 
-Components & hooks in this library will automatically find all containers with overflows and render only visible items.
+Components & hooks in this library will automatically find all containers with overflows and render only visible items.  
+So you could stack and wrap your list in anyway you want, everything will work.
 
-So you could stack/wrap/move your list in anyway you want, everything will work.
+You also could use some parts of this library for example to calculate only visible on screen rect of element.
 
 ![](./important.jpg)
 
@@ -27,10 +29,10 @@ npm i react-virtual-overflow
 
 [demo app code](src/examples/demo.tsx)
 
-## Simple
+## Simple example
 
 ```tsx
-import { SimpleVirtualListV } from "react-virtual-overflow/lib/simple";
+import { VirtualListY } from "react-virtual-overflow/lib/fixed-list-y";
 
 function MyApp() {
     const items = Array.from({ length: 300 }).map((_, i) => `item ${i}`);
@@ -43,7 +45,7 @@ function MyApp() {
 
     return (
         <div style={{ overflowY: 'scroll', height: '300px', background: 'lightgreen' }}>
-            <SimpleVirtualListV
+            <VirtualListY
                 items={items}
                 itemHeight={itemHeight}
                 itemKey={x => x}
@@ -54,12 +56,12 @@ function MyApp() {
 }
 ```
 
-## Advanced
+## Advanced example
 
 Advanced example with hook
 
 ```tsx
-import { useVirtualOverflowV } from "react-virtual-overflow";
+import { useVirtualOverflowY } from "react-virtual-overflow";
 
 function MyApp() {
     const items = Array.from({ length: 300 }).map((_, i) => `item ${i}`);
@@ -68,9 +70,9 @@ function MyApp() {
 
     const itemHeight = 40;
 
-    const renderedItems = useVirtualOverflowV({
+    const { renderedItems } = useVirtualOverflowY({
         containerRef,
-        itemsLength: items.length,
+        itemsLengthY: items.length,
         itemHeight,
         renderItem: (itemIndex, offsetTop) => {
             const item = items[itemIndex];
@@ -93,25 +95,164 @@ function MyApp() {
 }
 ```
 
-### useVirtualOverflowV
+## Available hooks & components
+
+<details>
+<summary>
+<b>VirtualListY component</b>
+</summary>
+
+This component is used to render vertical list
+
+```tsx
+import { VirtualListY } from "react-virtual-overflow/lib/fixed-list-y";
+
+type VirtualListYProps<ItemT> = {
+    items: ItemT[],
+    itemHeight: number,
+    // used to calculate react key when rendering
+    itemKey: (item: ItemT, itemIndex: number) => string,
+    overscanItemsCount?: number,
+    renderItem: (item: ItemT, itemIndex: number, contentTopOffset: number) => React.ReactNode,
+    calcVisibleRect?: VirtualOverflowCalcVisibleRectFn
+};
+
+function MyApp() {
+    const items = Array.from({ length: 300 }).map((_, i) => `item ${i}`);
+
+    const itemHeight = 40;
+
+    const renderItem = (item) => (
+        <div style={{ height: '40px' }}>{item}</div>
+    );
+
+    return (
+        <div style={{ overflowY: 'scroll', height: '300px', background: 'lightgreen' }}>
+            <VirtualListY
+                items={items}
+                itemHeight={itemHeight}
+                itemKey={x => x}
+                renderItem={renderItem}
+            />
+        </div>
+    );
+}
+```
+
+</details>
+
+
+<details>
+<summary>
+<b>VirtualListX component</b>
+</summary>
+
+This component is used to render horizontal list
+
+```tsx
+import { VirtualListX } from "react-virtual-overflow/lib/fixed-list-x";
+
+type VirtualListXProps<ItemT> = {
+    items: ItemT[],
+    itemWidth: number,
+    itemKey: (item: ItemT, itemIndex: number) => string,
+    overscanItemsCount?: number,
+    renderItem: (item: ItemT, itemIndex: number, contentTopOffset: number) => React.ReactNode,
+    calcVisibleRect?: VirtualOverflowCalcVisibleRectFn
+};
+
+function MyApp() {
+    const items = Array.from({ length: 300 }).map((_, i) => `item ${i}`);
+
+    const itemWidth = 40;
+
+    const renderItem = (item) => (
+        <div style={{ width: '40px' }}>{item}</div>
+    );
+
+    return (
+        <div style={{ overflowX: 'scroll', height: '300px', background: 'lightgreen' }}>
+            <VirtualListX
+                items={items}
+                itemWidth={itemWidth}
+                itemKey={x => x}
+                renderItem={renderItem}
+            />
+        </div>
+    );
+}
+```
+
+</details>
+
+
+<details>
+<summary>
+<b>VirtualGrid component</b>
+</summary>
+
+This component is used to render grid
+
+```tsx
+import { VirtualGrid } from "react-virtual-overflow/lib/fixed-grid";
+
+type VirtualGridProps<ItemT> = {
+    items: ItemT[][],
+    columnsNum: number,
+    itemWidth: number,
+    itemHeight: number,
+    itemKey: (item: ItemT, itemIndexX: number, itemIndexY: number) => string,
+    overscanItemsCount?: number,
+    renderItem: (item: ItemT, itemIndexX: number, leftOffsetPx: number, itemIndexY: number, topOffsetPx: number) => React.ReactNode,
+    calcVisibleRect?: VirtualOverflowCalcVisibleRectFn
+};
+
+function GridExample() {
+    const items = itemsGrid;
+
+    return (
+        <div style={{ overflowY: 'scroll', height: '300px', background: 'lightgreen' }}>
+            <VirtualGrid
+                items={items}
+                columnsNum={300}
+                itemWidth={40}
+                itemHeight={80}
+                itemKey={x => x}
+                overscanItemsCount={3}
+                renderItem={item => <div style={{ width: '40px', height: '80px' }}>{item}</div>}
+            />
+        </div>
+    );
+}
+```
+
+</details>
+
+
+<details>
+<summary>
+<b>Vertical list hook</b>
+</summary>
+
+`useVirtualOverflowY` hook that computes and renders vertical list
 
 It accepts this params:
 
 ```ts
-type UseVirtualOverflowParamsV = {
-    // reference to you container with elements
+type UseVirtualOverflowParamsY = {
+    // reference to container with elements (not scroll)
     containerRef: React.MutableRefObject<HTMLElement>;
 
     // total num of items
-    itemsLength: number;
+    itemsLengthY: number;
 
     // how to render each item
-    renderItem: (indexIndex: number, contentTopOffset: number) => React.ReactNode;
+    renderItem: (itemIndex: number, contentTopOffsetPx: number) => React.ReactNode;
 
-    // height of one item
+    // height of one item in pixels
     itemHeight: number;
 
-    // how much items should be rendered beyond visibleborder
+    // how much items should be rendered beyond visible border
     // default=3
     overscanItemsCount?: number;
 
@@ -119,6 +260,228 @@ type UseVirtualOverflowParamsV = {
     calcVisibleRect?: CalcVisibleRectFn;
 };
 ```
+
+And returns:
+
+```ts
+{
+    renderedItems: React.Node[],
+
+    // method that will force update calculations
+    updateViewRect: () => void,
+}
+```
+
+</details>
+
+
+<details>
+<summary>
+<b>Horizontal list hook</b>
+</summary>
+
+`useVirtualOverflowX` hook that computes and renders horizontal list
+
+It accepts this params:
+
+```ts
+type UseVirtualOverflowParamsX = {
+    // reference to container with elements (not scroll)
+    containerRef: React.MutableRefObject<HTMLElement>;
+
+    // total num of items
+    itemsLengthX: number;
+
+    // how to render each item
+    renderItem: (itemIndex: number, contentLeftOffsetPx: number) => React.ReactNode;
+
+    // width of one item in pixels
+    itemWidth: number;
+
+    // how much items should be rendered beyond visible border
+    // default=3
+    overscanItemsCount?: number;
+
+    // function to calculate visible rect (check utils for other options)
+    calcVisibleRect?: CalcVisibleRectFn;
+};
+```
+
+And returns:
+
+```ts
+{
+    renderedItems: React.Node[],
+
+    // method that will force update calculations
+    updateViewRect: () => void,
+}
+```
+
+</details>
+
+
+<details>
+<summary>
+<b>Grid hook</b>
+</summary>
+
+`useVirtualOverflowGrid` hook that computes and renders horizontal list
+
+It accepts this params:
+
+```ts
+type UseVirtualOverflowParamsGrid = {
+    // reference to container with elements (not scroll)
+    containerRef: React.MutableRefObject<HTMLElement>;
+
+    // total num of items horizontal
+    itemsLengthX: number;
+
+    // total num of items vertical
+    itemsLengthY: number;
+
+    // how to render each item
+    renderItem: (itemIndexX: number, leftOffsetPx: number, itemIndexY: number, topOffsetPx: number) => React.ReactNode;
+
+    // width of one item in pixels
+    itemWidth: number;
+
+    // height of one item in pixels
+    itemHeight: number;
+
+    // how much items should be rendered beyond visible border
+    // default=3
+    overscanItemsCount?: number;
+
+    // function to calculate visible rect (check utils for other options)
+    calcVisibleRect?: CalcVisibleRectFn;
+};
+```
+
+And returns:
+
+```ts
+{
+    renderedItems: React.Node[],
+
+    // method that will force update calculations
+    updateViewRect: () => void,
+}
+```
+
+</details>
+
+
+<details>
+<summary>
+<b>useCalcVirtualOverflow - universal hook for fixed list/grid</b>
+</summary>
+
+`useCalcVirtualOverflow` hook that computes visible rect at calculates slice of items that should be rendered
+
+It could be used if you want to render items manually, and you need only slice calculated
+
+It accepts this params:
+
+```ts
+type UseVirtualOverflowParams = {
+    containerRef: React.MutableRefObject<HTMLElement>,
+    itemsLengthX?: number,
+    itemsLengthY?: number,
+    /** if undefined, then horizontal calculation will be skipped */
+    itemWidth?: number,
+    /** if undefined, then vertical calculation will be skipped */
+    itemHeight?: number,
+    /** default=3 */
+    overscanItemsCount?: number,
+    calcVisibleRect?: VirtualOverflowCalcVisibleRectFn,
+};
+```
+
+And returns:
+
+```ts
+{
+    itemSlice: {
+        topStartIndex: number;
+        lengthY: number;
+        leftStartIndex: number;
+        lengthX: number;
+    };
+    updateViewRect: () => void;
+}
+```
+
+</details>
+
+
+<details>
+<summary>
+<b>Calculate visible on screen rect</b>
+</summary>
+
+`virtualOverflowCalcVisibleRect` method will calculate on screen visible rect of some element
+
+It accepts this params:
+
+```ts
+function virtualOverflowCalcVisibleRect(element: HTMLElement): {
+    top: number;
+    left: number;
+    bottom: number;
+    right: number;
+    contentOffsetTop: number;
+    contentOffsetLeft: number;
+    contentVisibleHeight: number;
+    contentVisibleWidth: number;
+};
+```
+
+</details>
+
+
+
+<details>
+<summary>
+<b>Slice calculation from visible rect</b>
+</summary>
+
+`virtualOverflowCalcItems` method will calculate slice of items from visible rect
+
+You can pass here horizontal and vertical values from "calcVisibleRect" method.
+
+This method is axis-agnostic, so you just first calculate vertical data by passing vertical coords of rect, and then (if you need) horizontal.
+
+```ts
+function virtualOverflowCalcItems(
+    contentOffsetStartPx: number,
+    contentVisibleSizePx: number,
+    itemSize: number,
+    overscanItemsCount: number,
+    itemsLength: number
+);
+
+// returns
+{
+    // index of starting item that should be rendered (including overscan)
+    itemStart: number,
+    // total count of items (including start & end overscan)
+    itemLen: number
+};
+
+// Example for vertical slice calculation:
+const visibleRect = calcVisibleRect(containerRef.current);
+const verticalSlice = virtualOverflowCalcItems(
+    visibleRect.contentOffsetTop,
+    visibleRect.contentVisibleHeight,
+    itemHeight,
+    overscanItemsCount,
+    itemsLengthY
+);
+```
+
+</details>
 
 ### utils
 
@@ -143,9 +506,9 @@ useLayoutEffect(() => {
     setParentsWithOverflow(stack);
 }, []);
 
-const rendered = useVirtualOverflowV({
+const { renderedItems } = useVirtualOverflowY({
     containerRef,
-    itemsLength,
+    itemsLengthY,
     itemHeight,
     calcVisibleRect: (el: HTMLElement) => {
         // calculate only by found overflows

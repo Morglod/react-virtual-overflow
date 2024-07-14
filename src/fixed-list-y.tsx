@@ -1,22 +1,24 @@
 import { useRef } from "react";
-import { VirtualOverflowCalcVisibleRectFn, useVirtualOverflowV } from ".";
+import { VirtualOverflowCalcVisibleRectFn, useVirtualOverflowY } from ".";
 
-export type SimpleVirtualListVProps<ItemT> = {
+export type VirtualListYProps<ItemT> = {
     items: ItemT[],
     itemHeight: number,
     itemKey: (item: ItemT, itemIndex: number) => string,
     overscanItemsCount?: number,
-    renderItem: (item: ItemT, indexIndex: number, contentTopOffset: number) => React.ReactNode,
+    renderItem: (item: ItemT, itemIndex: number, contentTopOffset: number) => React.ReactNode,
     calcVisibleRect?: VirtualOverflowCalcVisibleRectFn
 };
 
-export function SimpleVirtualListV<ItemT>(props: SimpleVirtualListVProps<ItemT>) {
+export function VirtualListY<ItemT>(props: VirtualListYProps<ItemT>) {
     const containerRef = useRef<HTMLDivElement>(undefined!);
 
-    const rendered = useVirtualOverflowV({
+    const { renderedItems } = useVirtualOverflowY({
         containerRef,
-        itemsLength: props.items.length,
+        itemsLengthY: props.items.length,
         itemHeight: props.itemHeight,
+        overscanItemsCount: props.overscanItemsCount,
+        calcVisibleRect: props.calcVisibleRect,
         renderItem: (itemIndex: number, topOffset: number) => {
             const item = props.items[itemIndex];
             if (!item) return null;
@@ -30,7 +32,7 @@ export function SimpleVirtualListV<ItemT>(props: SimpleVirtualListVProps<ItemT>)
 
     return (
         <div ref={containerRef} style={{ height: `${props.items.length * props.itemHeight}px`, position: 'relative' }}>
-            {rendered}
+            {renderedItems}
         </div>
     );
 }
