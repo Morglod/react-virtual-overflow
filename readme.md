@@ -14,12 +14,14 @@ Similar to [react-virtualized](https://github.com/bvaughn/react-virtualized), bu
 -   It just works
 -   ~0.5kb gzipped
 
-Currently only fixed item sizes supported, but will dynamic sizing later.
+Currently only fixed item sizes supported, but will add dynamic sizing later.
 
 Components & hooks in this library will automatically find all containers with overflows and render only visible items.  
 So you could stack and wrap your list in anyway you want, everything will work.
 
 You also could use some parts of this library for example to calculate only visible on screen rect of element.
+
+This library track only scroll/resize/orientationchange events (on capture phase), so if you resize some wrapper with overflow through styles, you should use hooks and call recalculation manually.
 
 ![](./important.jpg)
 
