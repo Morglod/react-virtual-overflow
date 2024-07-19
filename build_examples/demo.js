@@ -39,6 +39,7 @@ const itemsGrid = Array.from({ length: 300 }).map((_, iy) => Array.from({ length
 function ListWithHookExample() {
     const items = itemsLine;
     const containerRef = (0, react_1.useRef)(undefined);
+    const infoRef = (0, react_1.useRef)(undefined);
     const itemHeight = 40;
     const { renderedItems, updateViewRect } = (0, __1.useVirtualOverflowY)({
         containerRef,
@@ -49,9 +50,14 @@ function ListWithHookExample() {
         renderItem: (itemIndex, offsetTop, item = items[itemIndex]) => ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', top: `${offsetTop}px` }, children: (0, jsx_runtime_1.jsx)("div", { style: { height: '40px' }, children: item }) }, item)),
     });
     (0, react_1.useEffect)(() => {
-        setInterval(() => updateViewRect(), 8);
+        // in case of animated containers
+        // setInterval(() => updateViewRect(), 8);
+        setInterval(() => {
+            const visibleRect = (0, __1.virtualOverflowCalcVisibleRect)(containerRef.current);
+            infoRef.current.innerText = `Visible rect of content:\n\n${JSON.stringify(visibleRect, null, 2)}`;
+        }, 24);
     }, []);
-    return ((0, jsx_runtime_1.jsx)("div", { style: { overflowY: 'scroll', height: '300px', background: 'lightgreen' }, children: (0, jsx_runtime_1.jsx)("div", { ref: containerRef, style: { position: 'relative', height: `${itemHeight * items.length}px` }, children: renderedItems }) }));
+    return ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("div", { ref: infoRef, style: { position: 'fixed', top: 0, right: 0, paddingRight: '40px', width: '200px' } }), (0, jsx_runtime_1.jsx)("div", { style: { overflowY: 'scroll', height: '300px', background: 'lightgreen' }, children: (0, jsx_runtime_1.jsx)("div", { ref: containerRef, style: { position: 'relative', height: `${itemHeight * items.length}px` }, children: renderedItems }) })] }));
 }
 function VerticalListExample() {
     const items = itemsLine;
@@ -68,7 +74,7 @@ function App() {
                 }, children: "Scroll me down" }), (0, jsx_runtime_1.jsxs)("div", { style: { overflowY: 'scroll', height: '600px', background: 'blue' }, children: [(0, jsx_runtime_1.jsx)("div", { style: {
                             height: '700px', fontSize: '60px',
                             color: 'white'
-                        }, children: "Scroll me down" }), (0, jsx_runtime_1.jsx)(VerticalListExample, {})] }), (0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } })] }));
+                        }, children: "Scroll me down" }), (0, jsx_runtime_1.jsx)(ListWithHookExample, {})] }), (0, jsx_runtime_1.jsx)("div", { style: { height: '700px' } })] }));
 }
 const rootElement = document.getElementById("demo");
 const root = client_1.default.createRoot(rootElement);

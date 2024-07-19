@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
-import { useVirtualOverflowY } from "..";
+import { useVirtualOverflowY, virtualOverflowCalcVisibleRect } from "..";
 import { virtualOverflowUtils } from "../utils";
 import { VirtualListY } from "../fixed-list-y";
 import { VirtualGrid } from "../fixed-grid";
@@ -11,6 +11,7 @@ const itemsGrid = Array.from({ length: 300 }).map((_, iy) => Array.from({ length
 function ListWithHookExample() {
     const items = itemsLine;
     const containerRef = useRef<HTMLDivElement>(undefined!);
+    const infoRef = useRef<HTMLDivElement>(undefined!);
 
     const itemHeight = 40;
 
@@ -28,15 +29,24 @@ function ListWithHookExample() {
     });
 
     useEffect(() => {
-        setInterval(() => updateViewRect(), 8);
+        // in case of animated containers
+        // setInterval(() => updateViewRect(), 8);
+
+        setInterval(() => {
+            const visibleRect = virtualOverflowCalcVisibleRect(containerRef.current);
+            infoRef.current.innerText = `Visible rect of content:\n\n${JSON.stringify(visibleRect, null, 2)}`;
+        }, 24);
     }, []);
 
     return (
-        <div style={{ overflowY: 'scroll', height: '300px', background: 'lightgreen' }}>
-            <div ref={containerRef} style={{ position: 'relative', height: `${itemHeight * items.length}px` }}>
-                {renderedItems}
+        <>
+            <div ref={infoRef} style={{ position: 'fixed', top: 0, right: 0, paddingRight: '40px', width: '200px' }}></div>
+            <div style={{ overflowY: 'scroll', height: '300px', background: 'lightgreen' }}>
+                <div ref={containerRef} style={{ position: 'relative', height: `${itemHeight * items.length}px` }}>
+                    {renderedItems}
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 
@@ -87,7 +97,7 @@ function App() {
                 }}>
                     Scroll me down
                 </div>
-                <VerticalListExample />
+                <ListWithHookExample />
             </div>
             <div style={{ height: '700px' }}></div>
         </div>
