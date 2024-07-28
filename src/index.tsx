@@ -1,16 +1,5 @@
 import { useLayoutEffect, useMemo, useState } from "react";
-
-function debounceAnimationFrame(func: (frameTime: number) => void) {
-    let frameRequest = 0;
-
-    return {
-        requestFrame: () => {
-            cancelAnimationFrame(frameRequest);
-            frameRequest = requestAnimationFrame((frameTime) => func.call(undefined, frameTime));
-        },
-        cancelFrame: () => cancelAnimationFrame(frameRequest)
-    };
-}
+import { rvoDebounceAnimationFrame } from "./small-utils";
 
 export type VirtualOverflowVisibleRect = {
     top: number;
@@ -134,7 +123,7 @@ export function useCalcVirtualOverflow(params: UseCalcVirtualOverflowParams, dep
         lengthX: 0,
     });
 
-    const { requestFrame: updateViewRect, cancelFrame } = useMemo(() => debounceAnimationFrame((frameTime) => {
+    const { requestFrame: updateViewRect, cancelFrame } = useMemo(() => rvoDebounceAnimationFrame((frameTime) => {
         if (!containerRef.current) return;
         const visibleRect = calcVisibleRect(containerRef.current, frameTime);
         const newItemSlice = {
@@ -191,6 +180,7 @@ export function useVirtualOverflowY(params: UseVirtualOverflowParamsY, deps: any
     return {
         renderedItems: utilRenderItems1D(itemSlice.topStartIndex, itemSlice.lengthY, params.itemHeight, params.renderItem),
         updateViewRect,
+        itemSlice,
     };
 }
 
@@ -199,6 +189,7 @@ export function useVirtualOverflowX(params: UseVirtualOverflowParamsX, deps: any
     return {
         renderedItems: utilRenderItems1D(itemSlice.leftStartIndex, itemSlice.lengthX, params.itemWidth, params.renderItem),
         updateViewRect,
+        itemSlice,
     };
 }
 
@@ -217,6 +208,7 @@ export function useVirtualOverflowGrid(params: UseVirtualOverflowParamsGrid, dep
 
     return {
         renderedItems,
-        updateViewRect
+        updateViewRect,
+        itemSlice
     };
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { useVirtualOverflowY, virtualOverflowCalcVisibleRect } from "..";
 import { virtualOverflowUtils } from "../utils";
@@ -9,13 +9,13 @@ const itemsLine = Array.from({ length: 300 }).map((_, i) => `item ${i}`);
 const itemsGrid = Array.from({ length: 300 }).map((_, iy) => Array.from({ length: 300 }).map((_, ix) => `item ${ix} ${iy}`));
 
 function ListWithHookExample() {
-    const items = itemsLine;
+    const [items, setItems] = useState([] as string[]);
     const containerRef = useRef<HTMLDivElement>(undefined!);
     const infoRef = useRef<HTMLDivElement>(undefined!);
 
     const itemHeight = 40;
 
-    const { renderedItems, updateViewRect } = useVirtualOverflowY({
+    const { renderedItems, updateViewRect, itemSlice } = useVirtualOverflowY({
         containerRef,
         itemHeight,
         itemsLengthY: items.length,
@@ -37,6 +37,13 @@ function ListWithHookExample() {
             infoRef.current.innerText = `Visible rect of content:\n\n${JSON.stringify(visibleRect, null, 2)}`;
         }, 24);
     }, []);
+
+    useEffect(() => {
+        if (itemSlice.topStartIndex + itemSlice.lengthY >= items.length - 4) {
+            // load more
+            setItems(prev => [...prev, ...itemsLine]);
+        }
+    }, [itemSlice.topStartIndex, itemSlice.lengthY]);
 
     return (
         <>

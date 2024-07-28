@@ -10,6 +10,7 @@ Similar to [react-virtualized](https://github.com/bvaughn/react-virtualized), bu
 -   No magical divs will wrap your list with position: absolute and height: 0
 -   No scroll syncing problems
 -   No AutoWindow over AutoSize with VerticalSpecialList
+-   Dead simple infinity loader
 -   Full rendering controll
 -   It just works
 -   ~0.5kb gzipped
@@ -283,6 +284,13 @@ And returns:
 
     // method that will force update calculations
     updateViewRect: () => void,
+
+    itemSlice: {
+        topStartIndex: number;
+        lengthY: number;
+        leftStartIndex: number;
+        lengthX: number;
+    }
 }
 ```
 
@@ -331,6 +339,13 @@ And returns:
 
     // method that will force update calculations
     updateViewRect: () => void,
+
+    itemSlice: {
+        topStartIndex: number;
+        lengthY: number;
+        leftStartIndex: number;
+        lengthX: number;
+    }
 }
 ```
 
@@ -385,6 +400,13 @@ And returns:
 
     // method that will force update calculations
     updateViewRect: () => void,
+
+    itemSlice: {
+        topStartIndex: number;
+        lengthY: number;
+        leftStartIndex: number;
+        lengthX: number;
+    }
 }
 ```
 
@@ -506,6 +528,40 @@ const verticalSlice = virtualOverflowCalcItems(
 ```
 
 </details>
+
+
+
+<details>
+<summary>
+<b>Infinity loader</b>
+</summary>
+
+<br>
+
+All hooks (`useCalcVirtualOverflow`, `useVirtualOverflowY`, `useVirtualOverflowX`, `useVirtualOverflowGrid`) returns `itemSlice` which you can use to trigger infinity loading.
+
+For example:
+
+```tsx
+const [items, setItems] = useState([] as any[]);
+
+// here we get current rendered itemSlice
+const { renderedItems, itemSlice } = useVirtualOverflowY({
+    itemsLengthY: items.length,
+    // ...
+});
+
+// here we check if we render bottom range of items
+useEffect(() => {
+    if (itemSlice.topStartIndex + itemSlice.lengthY >= items.length - 4) {
+        // load more
+        setItems((prev) => [...prev, ...newItems]);
+    }
+}, [itemSlice.topStartIndex, itemSlice.lengthY]);
+```
+
+</details>
+
 
 ### utils
 

@@ -37,11 +37,11 @@ const fixed_grid_1 = require("../fixed-grid");
 const itemsLine = Array.from({ length: 300 }).map((_, i) => `item ${i}`);
 const itemsGrid = Array.from({ length: 300 }).map((_, iy) => Array.from({ length: 300 }).map((_, ix) => `item ${ix} ${iy}`));
 function ListWithHookExample() {
-    const items = itemsLine;
+    const [items, setItems] = (0, react_1.useState)([]);
     const containerRef = (0, react_1.useRef)(undefined);
     const infoRef = (0, react_1.useRef)(undefined);
     const itemHeight = 40;
-    const { renderedItems, updateViewRect } = (0, __1.useVirtualOverflowY)({
+    const { renderedItems, updateViewRect, itemSlice } = (0, __1.useVirtualOverflowY)({
         containerRef,
         itemHeight,
         itemsLengthY: items.length,
@@ -57,6 +57,12 @@ function ListWithHookExample() {
             infoRef.current.innerText = `Visible rect of content:\n\n${JSON.stringify(visibleRect, null, 2)}`;
         }, 24);
     }, []);
+    (0, react_1.useEffect)(() => {
+        if (itemSlice.topStartIndex + itemSlice.lengthY >= items.length - 4) {
+            // load more
+            setItems(prev => [...prev, ...itemsLine]);
+        }
+    }, [itemSlice.topStartIndex, itemSlice.lengthY]);
     return ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("div", { ref: infoRef, style: { position: 'fixed', top: 0, right: 0, paddingRight: '40px', width: '200px' } }), (0, jsx_runtime_1.jsx)("div", { style: { overflowY: 'scroll', height: '300px', background: 'lightgreen' }, children: (0, jsx_runtime_1.jsx)("div", { ref: containerRef, style: { position: 'relative', height: `${itemHeight * items.length}px` }, children: renderedItems }) })] }));
 }
 function VerticalListExample() {
@@ -80,7 +86,7 @@ const rootElement = document.getElementById("demo");
 const root = client_1.default.createRoot(rootElement);
 root.render((0, jsx_runtime_1.jsx)(react_1.default.StrictMode, { children: (0, jsx_runtime_1.jsx)(App, {}) }));
 
-},{"..":4,"../fixed-grid":2,"../fixed-list-y":3,"../utils":5,"react":15,"react-dom/client":9,"react/jsx-runtime":16}],2:[function(require,module,exports){
+},{"..":4,"../fixed-grid":2,"../fixed-list-y":3,"../utils":6,"react":16,"react-dom/client":10,"react/jsx-runtime":17}],2:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VirtualGrid = void 0;
@@ -108,7 +114,7 @@ function VirtualGrid(props) {
 }
 exports.VirtualGrid = VirtualGrid;
 
-},{".":4,"react":15,"react/jsx-runtime":16}],3:[function(require,module,exports){
+},{".":4,"react":16,"react/jsx-runtime":17}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VirtualListY = void 0;
@@ -134,21 +140,12 @@ function VirtualListY(props) {
 }
 exports.VirtualListY = VirtualListY;
 
-},{".":4,"react":15,"react/jsx-runtime":16}],4:[function(require,module,exports){
+},{".":4,"react":16,"react/jsx-runtime":17}],4:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.useVirtualOverflowGrid = exports.useVirtualOverflowX = exports.useVirtualOverflowY = exports.useCalcVirtualOverflow = exports.virtualOverflowCalcItems = exports.virtualOverflowCalcVisibleRect = void 0;
 const react_1 = require("react");
-function debounceAnimationFrame(func) {
-    let frameRequest = 0;
-    return {
-        requestFrame: () => {
-            cancelAnimationFrame(frameRequest);
-            frameRequest = requestAnimationFrame((frameTime) => func.call(undefined, frameTime));
-        },
-        cancelFrame: () => cancelAnimationFrame(frameRequest)
-    };
-}
+const small_utils_1 = require("./small-utils");
 function virtualOverflowCalcVisibleRect(element) {
     const elementRect = element.getBoundingClientRect();
     const visibleRect = {
@@ -204,7 +201,7 @@ function useCalcVirtualOverflow(params, deps) {
         leftStartIndex: 0,
         lengthX: 0,
     });
-    const { requestFrame: updateViewRect, cancelFrame } = (0, react_1.useMemo)(() => debounceAnimationFrame((frameTime) => {
+    const { requestFrame: updateViewRect, cancelFrame } = (0, react_1.useMemo)(() => (0, small_utils_1.rvoDebounceAnimationFrame)((frameTime) => {
         if (!containerRef.current)
             return;
         const visibleRect = calcVisibleRect(containerRef.current, frameTime);
@@ -254,6 +251,7 @@ function useVirtualOverflowY(params, deps = []) {
     return {
         renderedItems: utilRenderItems1D(itemSlice.topStartIndex, itemSlice.lengthY, params.itemHeight, params.renderItem),
         updateViewRect,
+        itemSlice,
     };
 }
 exports.useVirtualOverflowY = useVirtualOverflowY;
@@ -262,6 +260,7 @@ function useVirtualOverflowX(params, deps = []) {
     return {
         renderedItems: utilRenderItems1D(itemSlice.leftStartIndex, itemSlice.lengthX, params.itemWidth, params.renderItem),
         updateViewRect,
+        itemSlice,
     };
 }
 exports.useVirtualOverflowX = useVirtualOverflowX;
@@ -277,12 +276,29 @@ function useVirtualOverflowGrid(params, deps = []) {
     }
     return {
         renderedItems,
-        updateViewRect
+        updateViewRect,
+        itemSlice
     };
 }
 exports.useVirtualOverflowGrid = useVirtualOverflowGrid;
 
-},{"react":15}],5:[function(require,module,exports){
+},{"./small-utils":5,"react":16}],5:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.rvoDebounceAnimationFrame = void 0;
+function rvoDebounceAnimationFrame(func) {
+    let frameRequest = 0;
+    return {
+        requestFrame: () => {
+            cancelAnimationFrame(frameRequest);
+            frameRequest = requestAnimationFrame((frameTime) => func.call(undefined, frameTime));
+        },
+        cancelFrame: () => cancelAnimationFrame(frameRequest),
+    };
+}
+exports.rvoDebounceAnimationFrame = rvoDebounceAnimationFrame;
+
+},{}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.virtualOverflowUtils = void 0;
@@ -371,7 +387,7 @@ var virtualOverflowUtils;
     virtualOverflowUtils.calcVisibleRectOverflowed = calcVisibleRectOverflowed;
 })(virtualOverflowUtils || (exports.virtualOverflowUtils = virtualOverflowUtils = {}));
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -557,7 +573,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -30429,7 +30445,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":6,"react":15,"scheduler":19}],8:[function(require,module,exports){
+},{"_process":7,"react":16,"scheduler":20}],9:[function(require,module,exports){
 /**
  * @license React
  * react-dom.production.min.js
@@ -30754,7 +30770,7 @@ exports.hydrateRoot=function(a,b,c){if(!ol(a))throw Error(p(405));var d=null!=c&
 e);return new nl(b)};exports.render=function(a,b,c){if(!pl(b))throw Error(p(200));return sl(null,a,b,!1,c)};exports.unmountComponentAtNode=function(a){if(!pl(a))throw Error(p(40));return a._reactRootContainer?(Sk(function(){sl(null,null,a,!1,function(){a._reactRootContainer=null;a[uf]=null})}),!0):!1};exports.unstable_batchedUpdates=Rk;
 exports.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!pl(c))throw Error(p(200));if(null==a||void 0===a._reactInternals)throw Error(p(38));return sl(a,b,c,!1,d)};exports.version="18.2.0-next-9e3b772b8-20220608";
 
-},{"react":15,"scheduler":19}],9:[function(require,module,exports){
+},{"react":16,"scheduler":20}],10:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -30783,7 +30799,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":6,"react-dom":10}],10:[function(require,module,exports){
+},{"_process":7,"react-dom":11}],11:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -30825,7 +30841,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-dom.development.js":7,"./cjs/react-dom.production.min.js":8,"_process":6}],11:[function(require,module,exports){
+},{"./cjs/react-dom.development.js":8,"./cjs/react-dom.production.min.js":9,"_process":7}],12:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -32143,7 +32159,7 @@ exports.jsxs = jsxs;
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":6,"react":15}],12:[function(require,module,exports){
+},{"_process":7,"react":16}],13:[function(require,module,exports){
 /**
  * @license React
  * react-jsx-runtime.production.min.js
@@ -32156,7 +32172,7 @@ exports.jsxs = jsxs;
 'use strict';var f=require("react"),k=Symbol.for("react.element"),l=Symbol.for("react.fragment"),m=Object.prototype.hasOwnProperty,n=f.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner,p={key:!0,ref:!0,__self:!0,__source:!0};
 function q(c,a,g){var b,d={},e=null,h=null;void 0!==g&&(e=""+g);void 0!==a.key&&(e=""+a.key);void 0!==a.ref&&(h=a.ref);for(b in a)m.call(a,b)&&!p.hasOwnProperty(b)&&(d[b]=a[b]);if(c&&c.defaultProps)for(b in a=c.defaultProps,a)void 0===d[b]&&(d[b]=a[b]);return{$$typeof:k,type:c,key:e,ref:h,props:d,_owner:n.current}}exports.Fragment=l;exports.jsx=q;exports.jsxs=q;
 
-},{"react":15}],13:[function(require,module,exports){
+},{"react":16}],14:[function(require,module,exports){
 (function (process){(function (){
 /**
  * @license React
@@ -34899,7 +34915,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":6}],14:[function(require,module,exports){
+},{"_process":7}],15:[function(require,module,exports){
 /**
  * @license React
  * react.production.min.js
@@ -34927,7 +34943,7 @@ exports.useCallback=function(a,b){return U.current.useCallback(a,b)};exports.use
 exports.useInsertionEffect=function(a,b){return U.current.useInsertionEffect(a,b)};exports.useLayoutEffect=function(a,b){return U.current.useLayoutEffect(a,b)};exports.useMemo=function(a,b){return U.current.useMemo(a,b)};exports.useReducer=function(a,b,e){return U.current.useReducer(a,b,e)};exports.useRef=function(a){return U.current.useRef(a)};exports.useState=function(a){return U.current.useState(a)};exports.useSyncExternalStore=function(a,b,e){return U.current.useSyncExternalStore(a,b,e)};
 exports.useTransition=function(){return U.current.useTransition()};exports.version="18.2.0";
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34938,7 +34954,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react.development.js":13,"./cjs/react.production.min.js":14,"_process":6}],16:[function(require,module,exports){
+},{"./cjs/react.development.js":14,"./cjs/react.production.min.js":15,"_process":7}],17:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -34949,7 +34965,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/react-jsx-runtime.development.js":11,"./cjs/react-jsx-runtime.production.min.js":12,"_process":6}],17:[function(require,module,exports){
+},{"./cjs/react-jsx-runtime.development.js":12,"./cjs/react-jsx-runtime.production.min.js":13,"_process":7}],18:[function(require,module,exports){
 (function (process,setImmediate){(function (){
 /**
  * @license React
@@ -35587,7 +35603,7 @@ if (
 }
 
 }).call(this)}).call(this,require('_process'),require("timers").setImmediate)
-},{"_process":6,"timers":20}],18:[function(require,module,exports){
+},{"_process":7,"timers":21}],19:[function(require,module,exports){
 (function (setImmediate){(function (){
 /**
  * @license React
@@ -35610,7 +35626,7 @@ exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"
 exports.unstable_shouldYield=M;exports.unstable_wrapCallback=function(a){var b=y;return function(){var c=y;y=b;try{return a.apply(this,arguments)}finally{y=c}}};
 
 }).call(this)}).call(this,require("timers").setImmediate)
-},{"timers":20}],19:[function(require,module,exports){
+},{"timers":21}],20:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -35621,7 +35637,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"./cjs/scheduler.development.js":17,"./cjs/scheduler.production.min.js":18,"_process":6}],20:[function(require,module,exports){
+},{"./cjs/scheduler.development.js":18,"./cjs/scheduler.production.min.js":19,"_process":7}],21:[function(require,module,exports){
 (function (setImmediate,clearImmediate){(function (){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -35700,4 +35716,4 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this)}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":6,"timers":20}]},{},[1]);
+},{"process/browser.js":7,"timers":21}]},{},[1]);
